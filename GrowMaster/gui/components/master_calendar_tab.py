@@ -9,6 +9,7 @@ import calendar
 import logging
 
 from config.themes import themes
+from core.database.database_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,8 @@ class MasterCalendarTab:
         self.parent = parent
         self.settings = settings
         self.current_date = date.today()
+        self.db_manager = DatabaseManager()
+        self.tasks_data = []
         
         # Configure parent frame
         parent.grid_columnconfigure(0, weight=1)
@@ -144,29 +147,115 @@ class MasterCalendarTab:
                 )
                 day_label.pack(anchor="nw", padx=5, pady=2)
                 
-                # Sample tasks for demonstration
-                if day % 3 == 0:  # Add some sample tasks
-                    task_label = ctk.CTkLabel(
-                        day_frame,
-                        text="💧 Water plants",
-                        font=ctk.CTkFont(size=9),
-                        text_color=themes.get_color("info")
-                    )
-                    task_label.pack(anchor="w", padx=5)
+                # Real tasks for this day
+                current_day = date(self.current_date.year, self.current_date.month, day)
+                day_tasks = [task for task in self.tasks_data if task["due_date"] == current_day.isoformat()]
                 
-                if day % 7 == 0:
+                for task in day_tasks[:3]:  # Show max 3 tasks per day
+                    # Task priority color mapping
+                    priority_colors = {
+                        "high": themes.get_color("error"),
+                        "critical": themes.get_color("error"),
+                        "medium": themes.get_color("warning"),
+                        "low": themes.get_color("info")
+                    }
+                    
+                    # Task icon based on type
+                    task_icons = {
+                        "watering": "💧",
+                        "feeding": "🧪", 
+                        "pruning": "✂️",
+                        "harvesting": "🌾",
+                        "seeding": "🌱",
+                        "transplanting": "🌿",
+                        "general": "📝"
+                    }
+                    
+                    icon = task_icons.get(task["task_type"], "📝")
+                    color = priority_colors.get(task["priority"], themes.get_color("info"))
+                    
+                    # Truncate long task titles
+                    title = task["title"]
+                    if len(title) > 12:
+                        title = title[:12] + "..."
+                    
                     task_label = ctk.CTkLabel(
                         day_frame,
-                        text="🧪 Check nutrients",
+                        text=f"{icon} {title}",
                         font=ctk.CTkFont(size=9),
-                        text_color=themes.get_color("warning")
+                        text_color=color
                     )
                     task_label.pack(anchor="w", padx=5)
+                    
+                    # Add completion indicator
+                    if task["completed"]:
+                        task_label.configure(text_color=themes.get_color("success"))
+                
+                # Show "+X more" if there are more than 3 tasks
+                if len(day_tasks) > 3:
+                    more_label = ctk.CTkLabel(
+                        day_frame,
+                        text=f"+{len(day_tasks) - 3} more",
+                        font=ctk.CTkFont(size=8),
+                        text_color=themes.get_color("text_secondary")
+                    )
+                    more_label.pack(anchor="w", padx=5)
     
     def load_calendar_data(self):
         """Load tasks and events for calendar display"""
-        # TODO: Load real data from database
-        logger.info("Loading calendar data...")
+        logger.info("Loading calendar data from database...")
+        
+        try:
+            # Get tasks for the current month
+            start_date = self.current_date.replace(day=1)
+            if self.current_date.month == 12:
+                end_date = date(self.current_date.year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end_date = date(self.current_date.year, self.current_date.month + 1, 1) - timedelta(days=1)
+            
+            with self.db_manager.get_connection() as conn:
+                cursor = conn.execute("""
+                    SELECT t.id, t.title, t.description, t.priority, t.due_date, t.due_time,
+                           t.completed, t.task_type, t.estimated_duration, t.notes,
+                           g.name as garden_name, p.name as plant_name
+                    FROM tasks t
+                    LEFT JOIN gardens g ON t.garden_id = g.id
+                    LEFT JOIN plants p ON t.plant_id = p.id
+                    WHERE t.due_date >= ? AND t.due_date <= ?
+                    ORDER BY t.due_date, t.due_time
+                """, (start_date.isoformat(), end_date.isoformat()))
+                
+                tasks = cursor.fetchall()
+                self.tasks_data = []
+                
+                for task in tasks:
+                    self.tasks_data.append({
+                        "id": task[0],
+                        "title": task[1],
+                        "description": task[2] or "",
+                        "priority": task[3],
+                        "due_date": task[4],
+                        "due_time": task[5] or "",
+                        "completed": bool(task[6]),
+                        "task_type": task[7],
+                        "estimated_duration": task[8] or 0,
+                        "notes": task[9] or "",
+                        "garden_name": task[10] or "No Garden",
+                        "plant_name": task[11] or ""
+                    })
+            
+            logger.info(f"Loaded {len(self.tasks_data)} tasks for calendar display")
+            self.update_calendar_display()
+            
+        except Exception as e:
+            logger.error(f"Error loading calendar data: {e}")
+            self.tasks_data = []
+    
+    def update_calendar_display(self):
+        """Update calendar grid with task data"""
+        # Clear existing task displays in calendar cells
+        # This will be called after create_calendar_grid to add task indicators
+        logger.info(f"Updating calendar display with {len(self.tasks_data)} tasks")
     
     def prev_month(self):
         """Navigate to previous month"""

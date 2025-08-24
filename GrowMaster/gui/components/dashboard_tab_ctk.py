@@ -10,7 +10,6 @@ import logging
 from typing import Dict, List, Any
 
 from config.themes import themes
-from core.database.database_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,6 @@ class DashboardTab:
     def __init__(self, parent, settings):
         self.parent = parent
         self.settings = settings
-        self.db_manager = DatabaseManager()
         
         # Configure parent frame
         parent.grid_columnconfigure(0, weight=1)
@@ -135,36 +133,20 @@ class DashboardTab:
         self.gardens_list.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
     
     def create_tasks_list(self, parent):
-        """Create scrollable tasks list with real database data"""
+        """Create scrollable tasks list"""
         tasks_frame = ctk.CTkScrollableFrame(parent, label_text="")
         
-        # Load upcoming tasks from database
-        try:
-            upcoming_tasks = self.db_manager.get_upcoming_tasks(limit=5)
-            
-            if not upcoming_tasks:
-                # Show "no tasks" message
-                no_tasks_label = ctk.CTkLabel(
-                    tasks_frame,
-                    text="No upcoming tasks found.\nClick 'Add Task' to create one!",
-                    font=ctk.CTkFont(size=12),
-                    text_color=themes.get_color("text_secondary")
-                )
-                no_tasks_label.pack(pady=20)
-            else:
-                for i, task in enumerate(upcoming_tasks):
-                    self.create_task_item(tasks_frame, task, i)
-                    
-        except Exception as e:
-            logger.error(f"Failed to load tasks from database: {e}")
-            # Fallback to sample data if database fails
-            sample_tasks = [
-                {"title": "Water Plants - Garden 1", "due": "Today", "priority": "high"},
-                {"title": "Check pH levels", "due": "Tomorrow", "priority": "medium"},
-                {"title": "Nutrient feeding - All Gardens", "due": "In 2 days", "priority": "high"},
-            ]
-            for i, task in enumerate(sample_tasks):
-                self.create_task_item(tasks_frame, task, i)
+        # Sample tasks (would be loaded from database)
+        sample_tasks = [
+            {"title": "Water Plants - Garden 1", "due": "Today", "priority": "high"},
+            {"title": "Check pH levels", "due": "Tomorrow", "priority": "medium"},
+            {"title": "Nutrient feeding - All Gardens", "due": "In 2 days", "priority": "high"},
+            {"title": "Trim lower fan leaves", "due": "In 3 days", "priority": "low"},
+            {"title": "Check for pests", "due": "Weekly", "priority": "medium"},
+        ]
+        
+        for i, task in enumerate(sample_tasks):
+            self.create_task_item(tasks_frame, task, i)
         
         return tasks_frame
     
@@ -210,35 +192,18 @@ class DashboardTab:
         complete_btn.grid(row=0, column=2, rowspan=2, padx=10, pady=5)
     
     def create_gardens_list(self, parent):
-        """Create scrollable gardens list with real database data"""
+        """Create scrollable gardens list"""
         gardens_frame = ctk.CTkScrollableFrame(parent, label_text="")
         
-        # Load active gardens from database
-        try:
-            active_gardens = self.db_manager.get_active_gardens()
-            
-            if not active_gardens:
-                # Show "no gardens" message
-                no_gardens_label = ctk.CTkLabel(
-                    gardens_frame,
-                    text="No active gardens found.\nClick 'New Garden' to create one!",
-                    font=ctk.CTkFont(size=12),
-                    text_color=themes.get_color("text_secondary")
-                )
-                no_gardens_label.pack(pady=20)
-            else:
-                for i, garden in enumerate(active_gardens):
-                    self.create_garden_item(gardens_frame, garden, i)
-                    
-        except Exception as e:
-            logger.error(f"Failed to load gardens from database: {e}")
-            # Fallback to sample data if database fails
-            sample_gardens = [
-                {"name": "Indoor Tent #1", "status": "Flowering Week 6", "health": "Excellent", "plants": 4},
-                {"name": "Outdoor Plot", "status": "Vegetative", "health": "Good", "plants": 8},
-            ]
-            for i, garden in enumerate(sample_gardens):
-                self.create_garden_item(gardens_frame, garden, i)
+        # Sample gardens (would be loaded from database)
+        sample_gardens = [
+            {"name": "Indoor Tent #1", "status": "Flowering Week 6", "health": "Excellent", "plants": 4},
+            {"name": "Outdoor Plot", "status": "Vegetative", "health": "Good", "plants": 8},
+            {"name": "Hydro System", "status": "Seedling", "health": "Monitoring", "plants": 12},
+        ]
+        
+        for i, garden in enumerate(sample_gardens):
+            self.create_garden_item(gardens_frame, garden, i)
         
         return gardens_frame
     
@@ -321,45 +286,34 @@ class DashboardTab:
             btn.grid(row=0, column=i, padx=10, pady=15, sticky="ew")
     
     def refresh_dashboard(self):
-        """Refresh dashboard data from database"""
+        """Refresh dashboard data"""
         try:
+            # TODO: Load real data from database
+            # For now, update with sample data
             self.update_statistics()
-            # Refresh task and garden lists by recreating them
-            self.create_main_content()
-            logger.info("Dashboard refreshed with database data")
+            logger.info("Dashboard refreshed")
         except Exception as e:
             logger.error(f"Error refreshing dashboard: {e}")
     
     def update_statistics(self):
-        """Update dashboard statistics from database"""
+        """Update dashboard statistics"""
+        # TODO: Query database for real statistics
+        # For now, use sample data
+        stats = {
+            "active_gardens": 3,
+            "pending_tasks": 8,
+            "days_to_harvest": 21,
+            "total_plants": 24
+        }
+        
         try:
-            # Get real statistics from database
-            stats = {
-                "active_gardens": self.db_manager.get_garden_count(status="active"),
-                "pending_tasks": self.db_manager.get_task_count(completed=False),
-                "days_to_harvest": self.db_manager.get_days_to_next_harvest(),
-                "total_plants": self.db_manager.get_total_plant_count()
-            }
-            
-            # Update stat display widgets
-            if hasattr(self, 'stat_active_gardens_value'):
-                self.stat_active_gardens_value.configure(text=str(stats["active_gardens"]))
-            if hasattr(self, 'stat_pending_tasks_value'):
-                self.stat_pending_tasks_value.configure(text=str(stats["pending_tasks"]))
-            if hasattr(self, 'stat_days_to_harvest_value'):
-                harvest_text = str(stats["days_to_harvest"]) if stats["days_to_harvest"] else "--"
-                self.stat_days_to_harvest_value.configure(text=harvest_text)
-            if hasattr(self, 'stat_total_plants_value'):
-                self.stat_total_plants_value.configure(text=str(stats["total_plants"]))
-                
-        except Exception as e:
-            logger.error(f"Error updating statistics: {e}")
-            # Fallback to default values
-            if hasattr(self, 'stat_active_gardens_value'):
-                self.stat_active_gardens_value.configure(text="0")
-                self.stat_pending_tasks_value.configure(text="0")
-                self.stat_days_to_harvest_value.configure(text="--")
-                self.stat_total_plants_value.configure(text="0")
+            self.stat_active_gardens_value.configure(text=str(stats["active_gardens"]))
+            self.stat_pending_tasks_value.configure(text=str(stats["pending_tasks"]))
+            self.stat_days_to_harvest_value.configure(text=str(stats["days_to_harvest"]))
+            self.stat_total_plants_value.configure(text=str(stats["total_plants"]))
+        except AttributeError:
+            # Stats widgets not yet created
+            pass
     
     def schedule_refresh(self):
         """Schedule automatic dashboard refresh"""
@@ -380,22 +334,9 @@ class DashboardTab:
     
     # Event handlers
     def complete_task(self, task: Dict):
-        """Mark task as completed in database"""
-        try:
-            task_id = task.get('id')
-            if task_id:
-                # Update task status in database
-                success = self.db_manager.complete_task(task_id)
-                if success:
-                    logger.info(f"Task completed: {task['title']}")
-                    # Refresh dashboard to reflect changes
-                    self.refresh_dashboard()
-                else:
-                    logger.error(f"Failed to complete task: {task['title']}")
-            else:
-                logger.warning(f"Task has no ID, cannot complete: {task['title']}")
-        except Exception as e:
-            logger.error(f"Error completing task: {e}")
+        """Mark task as completed"""
+        logger.info(f"Completing task: {task['title']}")
+        # TODO: Update task in database
     
     def view_garden(self, garden: Dict):
         """View garden details"""

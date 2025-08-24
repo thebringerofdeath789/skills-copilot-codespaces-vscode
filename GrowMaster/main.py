@@ -36,7 +36,8 @@ def main():
         
         # Import GUI components after path setup
         import tkinter as tk
-        from gui.main_window_tk import MainWindow
+        import customtkinter as ctk
+        from gui.main_window import MainWindow
         from config.settings import Settings
         
         # Initialize application settings

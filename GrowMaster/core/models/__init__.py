@@ -44,6 +44,21 @@ class TaskStatus(Enum):
     OVERDUE = "overdue"
     CANCELLED = "cancelled"
 
+class TaskType(Enum):
+    """Task type categories"""
+    WATERING = "watering"
+    FEEDING = "feeding"
+    TRANSPLANTING = "transplanting"
+    PRUNING = "pruning"
+    TRAINING = "training"
+    MONITORING = "monitoring"
+    INSPECTION = "inspection"
+    LIGHTING = "lighting"
+    ENVIRONMENTAL = "environmental"
+    HARVEST = "harvest"
+    MAINTENANCE = "maintenance"
+    GENERAL = "general"
+
 class BaseModel:
     """Base model class with common functionality"""
     

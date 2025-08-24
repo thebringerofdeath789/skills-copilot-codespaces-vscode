@@ -8,7 +8,7 @@ import sqlite3
 import json
 import logging
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 import shutil
@@ -516,6 +516,147 @@ class DatabaseManager:
                     ).isoformat()
             
             return stats
+    
+    def get_upcoming_tasks(self, limit: int = 10) -> List[Dict]:
+        """Get upcoming tasks ordered by due date"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.execute("""
+                    SELECT t.*, g.name as garden_name 
+                    FROM tasks t 
+                    LEFT JOIN gardens g ON t.garden_id = g.id 
+                    WHERE t.completed = 0 
+                    ORDER BY t.due_date ASC, t.priority DESC 
+                    LIMIT ?
+                """, (limit,))
+                
+                tasks = []
+                for row in cursor.fetchall():
+                    task = dict(row)
+                    # Format due date for display
+                    if task['due_date']:
+                        due_date = datetime.strptime(task['due_date'], '%Y-%m-%d').date()
+                        today = date.today()
+                        if due_date == today:
+                            task['due'] = "Today"
+                        elif due_date == today + timedelta(days=1):
+                            task['due'] = "Tomorrow"
+                        elif due_date < today:
+                            task['due'] = "Overdue"
+                        else:
+                            days_diff = (due_date - today).days
+                            task['due'] = f"In {days_diff} days"
+                    else:
+                        task['due'] = "No date"
+                    tasks.append(task)
+                
+                return tasks
+        except Exception as e:
+            logger.error(f"Error getting upcoming tasks: {e}")
+            return []
+    
+    def get_active_gardens(self) -> List[Dict]:
+        """Get all active gardens with status info"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.execute("""
+                    SELECT g.*, 
+                           COUNT(p.id) as plants,
+                           'Active' as health
+                    FROM gardens g 
+                    LEFT JOIN plants p ON g.id = p.garden_id 
+                    WHERE g.status = 'active' 
+                    GROUP BY g.id
+                    ORDER BY g.name
+                """)
+                
+                gardens = []
+                for row in cursor.fetchall():
+                    garden = dict(row)
+                    # Set status based on plant growth stages
+                    if garden['plants'] > 0:
+                        # Get dominant growth stage
+                        stage_cursor = conn.execute("""
+                            SELECT growth_stage, COUNT(*) as count 
+                            FROM plants WHERE garden_id = ? 
+                            GROUP BY growth_stage 
+                            ORDER BY count DESC LIMIT 1
+                        """, (garden['id'],))
+                        stage_result = stage_cursor.fetchone()
+                        if stage_result:
+                            stage = stage_result['growth_stage']
+                            garden['status'] = stage.replace('_', ' ').title()
+                    else:
+                        garden['status'] = "Empty"
+                    gardens.append(garden)
+                
+                return gardens
+        except Exception as e:
+            logger.error(f"Error getting active gardens: {e}")
+            return []
+    
+    def get_garden_count(self, status: str = "active") -> int:
+        """Get count of gardens by status"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.execute("SELECT COUNT(*) FROM gardens WHERE status = ?", (status,))
+                return cursor.fetchone()[0]
+        except Exception as e:
+            logger.error(f"Error getting garden count: {e}")
+            return 0
+    
+    def get_task_count(self, completed: bool = False) -> int:
+        """Get count of tasks by completion status"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.execute("SELECT COUNT(*) FROM tasks WHERE completed = ?", (1 if completed else 0,))
+                return cursor.fetchone()[0]
+        except Exception as e:
+            logger.error(f"Error getting task count: {e}")
+            return 0
+    
+    def get_total_plant_count(self) -> int:
+        """Get total count of all plants"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.execute("SELECT COUNT(*) FROM plants")
+                return cursor.fetchone()[0]
+        except Exception as e:
+            logger.error(f"Error getting plant count: {e}")
+            return 0
+    
+    def get_days_to_next_harvest(self) -> Optional[int]:
+        """Get days until next harvest"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.execute("""
+                    SELECT MIN(expected_harvest_date) 
+                    FROM plants 
+                    WHERE expected_harvest_date IS NOT NULL 
+                    AND expected_harvest_date >= date('now')
+                """)
+                result = cursor.fetchone()[0]
+                if result:
+                    harvest_date = datetime.strptime(result, '%Y-%m-%d').date()
+                    return (harvest_date - date.today()).days
+                return None
+        except Exception as e:
+            logger.error(f"Error getting days to harvest: {e}")
+            return None
+    
+    def complete_task(self, task_id: int) -> bool:
+        """Mark a task as completed"""
+        try:
+            with self.get_connection() as conn:
+                conn.execute("""
+                    UPDATE tasks 
+                    SET completed = 1, completed_date = ? 
+                    WHERE id = ?
+                """, (datetime.now().isoformat(), task_id))
+                return True
+        except Exception as e:
+            logger.error(f"Error completing task {task_id}: {e}")
+            return False
 
 # Global database manager instance  
 db_manager = DatabaseManager()

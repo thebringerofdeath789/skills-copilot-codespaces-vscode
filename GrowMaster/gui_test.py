@@ -234,6 +234,321 @@ class GUITest:
         
         for activity in activities:
             tk.Label(activity_frame, text=activity, font=('Arial', 10), anchor='w').pack(fill='x', padx=10, pady=2)
+    
+    def create_test_tasks(self, parent):
+        """Create test tasks content"""
+        # Header
+        header = tk.Label(parent, text="Task Manager Test", font=('Arial', 14, 'bold'))
+        header.pack(pady=10)
+        
+        # Controls
+        controls_frame = tk.Frame(parent)
+        controls_frame.pack(fill='x', padx=10, pady=5)
+        
+        tk.Button(controls_frame, text="Add Task", bg='#4caf50', fg='white').pack(side='left', padx=5)
+        tk.Button(controls_frame, text="Complete Selected", bg='#2196f3', fg='white').pack(side='left', padx=5)
+        tk.Button(controls_frame, text="Delete", bg='#d13438', fg='white').pack(side='left', padx=5)
+        
+        # Task list
+        list_frame = tk.Frame(parent)
+        list_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Headers
+        headers_frame = tk.Frame(list_frame, bg='#f0f0f0', relief='solid', bd=1)
+        headers_frame.pack(fill='x', pady=(0,5))
+        
+        headers = ["Priority", "Task", "Garden", "Due Date", "Status"]
+        for header in headers:
+            tk.Label(headers_frame, text=header, font=('Arial', 10, 'bold'), 
+                    bg='#f0f0f0').pack(side='left', padx=20, pady=5)
+        
+        # Task rows
+        for task in self.sample_tasks:
+            task_frame = tk.Frame(list_frame, bg='white', relief='solid', bd=1)
+            task_frame.pack(fill='x', pady=2)
+            
+            priority_color = {'high': '#d13438', 'medium': '#ff9800', 'low': '#4caf50'}[task['priority']]
+            
+            tk.Label(task_frame, text=task['priority'].upper(), fg=priority_color, 
+                    font=('Arial', 9, 'bold'), bg='white').pack(side='left', padx=20, pady=5)
+            tk.Label(task_frame, text=task['title'], bg='white').pack(side='left', padx=20, pady=5)
+            tk.Label(task_frame, text=task['garden'], bg='white').pack(side='left', padx=20, pady=5)
+            tk.Label(task_frame, text=task['due_date'], bg='white').pack(side='left', padx=20, pady=5)
+            tk.Label(task_frame, text=task['status'].upper(), bg='white').pack(side='left', padx=20, pady=5)
+    
+    def create_test_gardens(self, parent):
+        """Create test gardens content"""
+        # Header
+        header = tk.Label(parent, text="Gardens Management Test", font=('Arial', 14, 'bold'))
+        header.pack(pady=10)
+        
+        # Controls
+        controls_frame = tk.Frame(parent)
+        controls_frame.pack(fill='x', padx=10, pady=5)
+        
+        tk.Button(controls_frame, text="New Garden", bg='#4caf50', fg='white').pack(side='left', padx=5)
+        tk.Button(controls_frame, text="Edit Selected", bg='#2196f3', fg='white').pack(side='left', padx=5)
+        tk.Button(controls_frame, text="Archive", bg='#ff9800', fg='white').pack(side='left', padx=5)
+        
+        # Gardens grid
+        gardens_frame = tk.Frame(parent)
+        gardens_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        for i, garden in enumerate(self.sample_gardens):
+            row = i // 2
+            col = i % 2
+            
+            # Garden card
+            card = tk.Frame(gardens_frame, bg='white', relief='solid', bd=2, padx=15, pady=15)
+            card.grid(row=row, column=col, padx=10, pady=10, sticky='ew')
+            
+            # Garden type color
+            type_colors = {'vegetative': '#4caf50', 'flowering': '#ff9800', 'seedling': '#2196f3'}
+            type_color = type_colors.get(garden['type'], '#607d8b')
+            
+            # Garden info
+            tk.Label(card, text=garden['name'], font=('Arial', 12, 'bold'), 
+                    bg='white', fg=type_color).pack(anchor='w')
+            tk.Label(card, text=f"Type: {garden['type'].title()}", 
+                    bg='white').pack(anchor='w')
+            tk.Label(card, text=f"Plants: {garden['plant_count']}", 
+                    bg='white').pack(anchor='w')
+            tk.Label(card, text=f"Status: {garden['status'].title()}", 
+                    bg='white').pack(anchor='w')
+            tk.Label(card, text=f"Next: {garden['next_task']}", 
+                    bg='white', font=('Arial', 9, 'italic')).pack(anchor='w')
+        
+        gardens_frame.grid_columnconfigure(0, weight=1)
+        gardens_frame.grid_columnconfigure(1, weight=1)
+    
+    def create_test_inventory(self, parent):
+        """Create test inventory content"""
+        # Header
+        header = tk.Label(parent, text="Inventory Management Test", font=('Arial', 14, 'bold'))
+        header.pack(pady=10)
+        
+        # Categories
+        categories_frame = tk.Frame(parent)
+        categories_frame.pack(fill='x', padx=10, pady=5)
+        
+        categories = ["All Items", "Nutrients", "Equipment", "Growing Media", "Seeds/Genetics"]
+        for category in categories:
+            tk.Button(categories_frame, text=category, bg='#e1e1e1').pack(side='left', padx=5)
+        
+        # Inventory list
+        inventory_frame = tk.Frame(parent)
+        inventory_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Headers
+        headers_frame = tk.Frame(inventory_frame, bg='#f0f0f0', relief='solid', bd=1)
+        headers_frame.pack(fill='x', pady=(0,5))
+        
+        headers = ["Item", "Category", "Quantity", "Unit", "Status"]
+        for header in headers:
+            tk.Label(headers_frame, text=header, font=('Arial', 10, 'bold'), 
+                    bg='#f0f0f0').pack(side='left', padx=30, pady=5)
+        
+        # Inventory rows
+        for item in self.sample_inventory:
+            item_frame = tk.Frame(inventory_frame, bg='white', relief='solid', bd=1)
+            item_frame.pack(fill='x', pady=2)
+            
+            status_text = "LOW STOCK" if item['low_stock'] else "OK"
+            status_color = '#d13438' if item['low_stock'] else '#4caf50'
+            
+            tk.Label(item_frame, text=item['item'], bg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=30, pady=5)
+            tk.Label(item_frame, text=item['category'].title(), bg='white').pack(side='left', padx=30, pady=5)
+            tk.Label(item_frame, text=str(item['quantity']), bg='white').pack(side='left', padx=30, pady=5)
+            tk.Label(item_frame, text=item['unit'], bg='white').pack(side='left', padx=30, pady=5)
+            tk.Label(item_frame, text=status_text, bg='white', fg=status_color, 
+                    font=('Arial', 9, 'bold')).pack(side='left', padx=30, pady=5)
+    
+    def test_dialogs_and_forms(self):
+        """Test 3: Dialog boxes and form elements"""
+        logger.info("Starting Test 3: Dialogs and Forms")
+        
+        try:
+            root = tk.Tk()
+            root.title("GrowMaster Pro - Forms Test")
+            root.geometry("600x500")
+            root.configure(bg='#f0f0f0')
+            
+            # Header
+            header = tk.Label(root, text="Forms and Dialogs Test", 
+                             font=('Arial', 16, 'bold'), bg='#f0f0f0')
+            header.pack(pady=20)
+            
+            # Form frame
+            form_frame = tk.Frame(root, bg='white', relief='solid', bd=1)
+            form_frame.pack(padx=20, pady=10, fill='both', expand=True)
+            
+            tk.Label(form_frame, text="Sample Garden Setup Form", 
+                    font=('Arial', 12, 'bold'), bg='white').pack(pady=10)
+            
+            # Form fields
+            fields_frame = tk.Frame(form_frame, bg='white')
+            fields_frame.pack(padx=20, pady=10, fill='x')
+            
+            # Garden name
+            tk.Label(fields_frame, text="Garden Name:", bg='white', anchor='w').pack(fill='x', pady=(5,0))
+            garden_name = tk.Entry(fields_frame, font=('Arial', 10))
+            garden_name.pack(fill='x', pady=(0,10))
+            garden_name.insert(0, "Test Garden")
+            
+            # Garden type
+            tk.Label(fields_frame, text="Garden Type:", bg='white', anchor='w').pack(fill='x', pady=(5,0))
+            garden_type = ttk.Combobox(fields_frame, values=["Vegetative", "Flowering", "Seedling"])
+            garden_type.pack(fill='x', pady=(0,10))
+            garden_type.set("Vegetative")
+            
+            # Plant count
+            tk.Label(fields_frame, text="Plant Count:", bg='white', anchor='w').pack(fill='x', pady=(5,0))
+            plant_count = tk.Spinbox(fields_frame, from_=1, to=100, font=('Arial', 10))
+            plant_count.pack(fill='x', pady=(0,10))
+            plant_count.set("12")
+            
+            # Growing medium
+            tk.Label(fields_frame, text="Growing Medium:", bg='white', anchor='w').pack(fill='x', pady=(5,0))
+            medium_frame = tk.Frame(fields_frame, bg='white')
+            medium_frame.pack(fill='x', pady=(0,10))
+            
+            medium_var = tk.StringVar(value="soil")
+            tk.Radiobutton(medium_frame, text="Soil", variable=medium_var, value="soil", bg='white').pack(side='left')
+            tk.Radiobutton(medium_frame, text="Hydroponic", variable=medium_var, value="hydro", bg='white').pack(side='left')
+            tk.Radiobutton(medium_frame, text="Coco Coir", variable=medium_var, value="coco", bg='white').pack(side='left')
+            
+            # Notes
+            tk.Label(fields_frame, text="Notes:", bg='white', anchor='w').pack(fill='x', pady=(5,0))
+            notes_text = tk.Text(fields_frame, height=4, font=('Arial', 10))
+            notes_text.pack(fill='x', pady=(0,10))
+            notes_text.insert('1.0', "Test garden setup with sample data for GUI testing.")
+            
+            # Buttons
+            button_frame = tk.Frame(form_frame, bg='white')
+            button_frame.pack(pady=10)
+            
+            def save_form():
+                messagebox.showinfo("Success", "Garden configuration saved successfully!")
+            
+            def test_warning():
+                messagebox.showwarning("Warning", "This is a test warning dialog.")
+            
+            def test_error():
+                messagebox.showerror("Error", "This is a test error dialog.")
+            
+            tk.Button(button_frame, text="Save Garden", command=save_form, 
+                     bg='#4caf50', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+            tk.Button(button_frame, text="Test Warning", command=test_warning, 
+                     bg='#ff9800', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+            tk.Button(button_frame, text="Test Error", command=test_error, 
+                     bg='#d13438', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+            
+            def close_test():
+                logger.info("Test 3 completed successfully")
+                self.test_results["dialogs_forms"] = "PASS"
+                root.destroy()
+            
+            tk.Button(button_frame, text="Close Test", command=close_test, 
+                     bg='#607d8b', fg='white', font=('Arial', 10, 'bold')).pack(side='left', padx=5)
+            
+            # Auto-close after 8 seconds
+            root.after(8000, close_test)
+            root.mainloop()
+            
+        except Exception as e:
+            logger.error(f"Test 3 failed: {e}")
+            self.test_results["dialogs_forms"] = f"FAIL: {e}"
+    
+    def test_main_application(self):
+        """Test 4: Full application launch"""
+        logger.info("Starting Test 4: Full Application")
+        
+        try:
+            from gui.main_window_tk import MainWindow
+            
+            app = MainWindow()
+            logger.info("Main application created successfully")
+            
+            # Auto-close after 5 seconds for testing
+            def close_test():
+                logger.info("Test 4 completed successfully")
+                self.test_results["main_application"] = "PASS"
+                app.root.destroy()
+            
+            app.root.after(5000, close_test)
+            app.run()
+            
+        except Exception as e:
+            logger.error(f"Test 4 failed: {e}")
+            self.test_results["main_application"] = f"FAIL: {e}"
+    
+    def run_all_tests(self):
+        """Run all GUI tests in sequence"""
+        logger.info("Starting GrowMaster Pro GUI Test Suite")
+        logger.info("=" * 50)
+        
+        tests = [
+            ("Basic Window", self.test_basic_window),
+            ("Tabbed Interface", self.test_tabbed_interface), 
+            ("Dialogs and Forms", self.test_dialogs_and_forms),
+            ("Main Application", self.test_main_application)
+        ]
+        
+        for test_name, test_func in tests:
+            logger.info(f"Running {test_name} test...")
+            test_func()
+        
+        # Print results
+        logger.info("=" * 50)
+        logger.info("TEST RESULTS:")
+        logger.info("=" * 50)
+        
+        for test_name, result in self.test_results.items():
+            status = "✓ PASS" if result == "PASS" else f"✗ {result}"
+            logger.info(f"{test_name.replace('_', ' ').title()}: {status}")
+        
+        passed = sum(1 for r in self.test_results.values() if r == "PASS")
+        total = len(self.test_results)
+        logger.info(f"
+Overall: {passed}/{total} tests passed")
+        
+        if passed == total:
+            logger.info("🎉 All GUI tests completed successfully!")
+        else:
+            logger.warning("⚠️ Some tests failed. Check logs for details.")
+
+def main():
+    """Run GUI tests"""
+    print("GrowMaster Pro - GUI Test Suite")
+    print("=" * 40)
+    print("This test suite verifies GUI functionality.")
+    print("Run this in a non-headless environment with display support.")
+    print("=" * 40)
+    
+    try:
+        # Test if GUI is available
+        root = tk.Tk()
+        root.withdraw()  # Hide test window
+        root.destroy()
+        
+        # Run test suite
+        tester = GUITest()
+        tester.run_all_tests()
+        
+    except tk.TclError as e:
+        print(f"❌ GUI not available: {e}")
+        print("This appears to be a headless environment.")
+        print("To run GUI tests:")
+        print("1. Use a system with display support")
+        print("2. Or use X11 forwarding: ssh -X username@server")
+        print("3. Or use VNC/remote desktop")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Test suite failed: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
 
 # Add the project root to Python path  
 project_root = os.path.dirname(os.path.abspath(__file__))

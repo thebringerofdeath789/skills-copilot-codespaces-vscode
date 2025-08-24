@@ -8,9 +8,10 @@ from typing import Dict, List, Optional, Any, Tuple
 import logging
 from enum import Enum
 
-from ..models.task import Task, TaskType, Priority, TaskStatus
-from ..models.garden import Garden, GrowthStage
-from ...data.knowledge_base.growing_guides import growing_knowledge
+from ..models.task import Task
+from ..models import TaskType, TaskPriority as Priority, TaskStatus, GrowthStage
+from ..models.garden import Garden
+from data.knowledge_base.growing_guides import growing_knowledge
 
 logger = logging.getLogger(__name__)
 

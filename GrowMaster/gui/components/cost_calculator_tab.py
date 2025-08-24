@@ -13,8 +13,8 @@ import matplotlib
 
 matplotlib.use('Agg')  # Use non-interactive backend
 
-from ...core.calculators.cost_calculator import CostCalculator
-from ...data.knowledge_base.products import product_database
+from core.calculators.cost_calculator import CostCalculator
+from data.knowledge_base.products import product_database
 
 class CostCalculatorTab(ctk.CTkFrame):
     """Advanced cost calculation interface"""
