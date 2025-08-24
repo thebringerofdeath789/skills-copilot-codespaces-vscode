@@ -17,7 +17,7 @@ class Themes:
         """Initialize theme system with default styles"""
         self.current_theme = "light"
         self.setup_themes()
-        self.setup_ttk_styles()
+        # Don't setup ttk styles until needed (requires display)
     
     def setup_themes(self):
         """Define color schemes for different themes"""
@@ -73,38 +73,42 @@ class Themes:
         }
     
     def setup_ttk_styles(self):
-        """Configure ttk widget styles"""
-        style = ttk.Style()
-        
-        # Get current theme colors
-        theme = self.get_current_theme()
-        
-        # Configure general styles
-        style.configure('Card.TFrame', 
-                       background=theme['card_bg'], 
-                       borderwidth=1, 
-                       relief='solid')
-        
-        style.configure('Header.TLabel', 
-                       background=theme['header_bg'],
-                       font=('Arial', 12, 'bold'))
-        
-        style.configure('Accent.TButton',
-                       background=theme['accent'],
-                       foreground='white',
-                       font=('Arial', 10, 'bold'))
-        
-        style.configure('Success.TButton',
-                       background=theme['success'],
-                       foreground='white')
-        
-        style.configure('Warning.TButton',
-                       background=theme['warning'],
-                       foreground='white')
-        
-        style.configure('Error.TButton',
-                       background=theme['error'],
-                       foreground='white')
+        """Configure ttk widget styles - call only when display is available"""
+        try:
+            style = ttk.Style()
+            
+            # Get current theme colors
+            theme = self.get_current_theme()
+            
+            # Configure general styles
+            style.configure('Card.TFrame', 
+                           background=theme['card_bg'], 
+                           borderwidth=1, 
+                           relief='solid')
+            
+            style.configure('Header.TLabel', 
+                           background=theme['header_bg'],
+                           font=('Arial', 12, 'bold'))
+            
+            style.configure('Accent.TButton',
+                           background=theme['accent'],
+                           foreground='white',
+                           font=('Arial', 10, 'bold'))
+            
+            style.configure('Success.TButton',
+                           background=theme['success'],
+                           foreground='white')
+            
+            style.configure('Warning.TButton',
+                           background=theme['warning'],
+                           foreground='white')
+            
+            style.configure('Error.TButton',
+                           background=theme['error'],
+                           foreground='white')
+        except tk.TclError:
+            # No display available, skip ttk styling
+            pass
     
     def get_current_theme(self) -> Dict[str, str]:
         """Get the current theme color dictionary"""
