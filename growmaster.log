@@ -20,3 +20,7 @@
 2025-08-24 23:50:03,793 - config.settings - INFO - Directory created/verified: /home/codespace/GrowMaster/backups
 2025-08-24 23:50:03,793 - __main__ - INFO - Application settings initialized
 2025-08-24 23:50:03,849 - __main__ - ERROR - Unexpected error: no display name and no $DISPLAY environment variable
+2025-08-25 05:18:02,531 - __main__ - INFO - Starting GrowMaster Pro...
+2025-08-25 05:18:03,320 - __main__ - ERROR - Import error: No module named 'customtkinter'
+2025-08-25 05:18:17,123 - __main__ - INFO - Starting GrowMaster Pro...
+2025-08-25 05:18:17,128 - __main__ - ERROR - Import error: No module named 'customtkinter'

@@ -5,11 +5,11 @@
 Pillow>=9.0.0
 
 # Data Management & Analysis
-pandas>=1.5.0
-numpy>=1.21.0
+pandas>=1.5.3
+numpy>=1.24.3
 
 # Calendar Widget (Optional)
-tkcalendar>=1.6.0
+tkcalendar
 
 # Visualization
 matplotlib>=3.5.0

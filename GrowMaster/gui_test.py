@@ -509,8 +509,7 @@ class GUITest:
         
         passed = sum(1 for r in self.test_results.values() if r == "PASS")
         total = len(self.test_results)
-        logger.info(f"
-Overall: {passed}/{total} tests passed")
+        logger.info(f"Overall: {passed}/{total} tests passed")
         
         if passed == total:
             logger.info("🎉 All GUI tests completed successfully!")
