@@ -16,11 +16,20 @@ matplotlib.use('Agg')  # Use non-interactive backend
 from core.calculators.cost_calculator import CostCalculator
 from data.knowledge_base.products import product_database
 
-class CostCalculatorTab(ctk.CTkFrame):
+class CostCalculatorTab:
     """Advanced cost calculation interface"""
     
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, parent, settings):
+        self.parent = parent
+        self.settings = settings
+        
+        # Configure parent layout
+        parent.grid_columnconfigure(0, weight=1)
+        parent.grid_rowconfigure(0, weight=1)
+        
+        # Create main frame
+        self.main_frame = ctk.CTkFrame(parent)
+        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
         
         self.cost_calculator = CostCalculator()
         self.current_analysis = None
@@ -30,15 +39,15 @@ class CostCalculatorTab(ctk.CTkFrame):
     def setup_ui(self):
         """Setup the cost calculator interface"""
         
-        # Main container with padding
-        main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        # Configure main frame layout
+        self.main_frame.grid_columnconfigure(0, weight=1)
+        self.main_frame.grid_rowconfigure(1, weight=1)
         
         # Header
-        header_frame = ctk.CTkFrame(main_frame)
-        header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        header_frame = ctk.CTkFrame(self.main_frame)
+        header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 5))
         
-        title_label = ctk.CTkLabel(header_frame, text="Cost Calculator & ROI Analysis", 
+        title_label = ctk.CTkLabel(header_frame, text="💰 Cost Calculator & ROI Analysis", 
                                   font=ctk.CTkFont(size=20, weight="bold"))
         title_label.pack(side="left", padx=10, pady=10)
         
@@ -50,8 +59,8 @@ class CostCalculatorTab(ctk.CTkFrame):
         self.calc_mode.pack(side="right", padx=10, pady=10)
         
         # Main content area (scrollable)
-        self.content_frame = ctk.CTkScrollableFrame(main_frame)
-        self.content_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        self.content_frame = ctk.CTkScrollableFrame(self.main_frame)
+        self.content_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
         
         # Initialize with setup cost analysis
         self.show_setup_cost_analysis()
@@ -634,21 +643,3 @@ RECOMMENDED SETUP: {best['tent_size']} Tent
             
             ctk.CTkLabel(best_frame, text=summary_text.strip(), 
                         justify="left", font=ctk.CTkFont(weight="bold")).pack(padx=10, pady=10)
-
-import customtkinter as ctk
-import logging
-from config.themes import themes
-
-class CostCalculatorTab:
-    def __init__(self, parent, settings):
-        self.parent = parent
-        self.settings = settings
-        parent.grid_columnconfigure(0, weight=1)
-        parent.grid_rowconfigure(0, weight=1)
-        
-        label = ctk.CTkLabel(
-            parent,
-            text="💰 Cost Calculator & Analytics\n\nComprehensive financial analysis and ROI tracking\nComing soon...",
-            font=ctk.CTkFont(size=16)
-        )
-        label.grid(row=0, column=0, padx=20, pady=20)

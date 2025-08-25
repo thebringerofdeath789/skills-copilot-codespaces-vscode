@@ -34,6 +34,9 @@ class SettingsTab:
         # Application Settings Section
         self.create_app_settings_section()
         
+        # Automation Settings Section
+        self.create_automation_settings_section()
+        
         # GUI Settings Section
         self.create_gui_settings_section()
         
@@ -102,6 +105,68 @@ class SettingsTab:
         )
         interval_entry.pack(side="left", padx=(10, 5))
         ctk.CTkLabel(interval_frame, text="days").pack(side="left")
+    
+    def create_automation_settings_section(self):
+        """Create automation settings section"""
+        automation_frame = ctk.CTkFrame(self.main_frame, **themes.get_frame_styles()["card"])
+        automation_frame.pack(fill="x", padx=10, pady=10)
+        
+        automation_label = ctk.CTkLabel(
+            automation_frame,
+            text="🤖 Automation Settings",
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        automation_label.pack(anchor="w", padx=15, pady=(15, 10))
+        
+        # Auto task generation
+        auto_tasks_frame = ctk.CTkFrame(automation_frame, fg_color="transparent")
+        auto_tasks_frame.pack(fill="x", padx=15, pady=5)
+        
+        self.auto_generate_tasks_var = ctk.BooleanVar(value=True)
+        auto_tasks_checkbox = ctk.CTkCheckBox(
+            auto_tasks_frame,
+            text="Automatically generate tasks for new gardens",
+            variable=self.auto_generate_tasks_var
+        )
+        auto_tasks_checkbox.pack(anchor="w")
+        
+        # Task coordination
+        coordination_frame = ctk.CTkFrame(automation_frame, fg_color="transparent")
+        coordination_frame.pack(fill="x", padx=15, pady=5)
+        
+        self.task_coordination_var = ctk.BooleanVar(value=True)
+        coordination_checkbox = ctk.CTkCheckBox(
+            coordination_frame,
+            text="Enable multi-garden task coordination",
+            variable=self.task_coordination_var
+        )
+        coordination_checkbox.pack(anchor="w")
+        
+        # Daily coordination time
+        time_frame = ctk.CTkFrame(automation_frame, fg_color="transparent")
+        time_frame.pack(fill="x", padx=15, pady=5)
+        
+        ctk.CTkLabel(time_frame, text="Daily coordination time:", width=200).pack(side="left")
+        self.coordination_time_var = ctk.StringVar(value="08:00")
+        time_entry = ctk.CTkEntry(
+            time_frame,
+            textvariable=self.coordination_time_var,
+            width=80,
+            placeholder_text="HH:MM"
+        )
+        time_entry.pack(side="left", padx=(10, 0))
+        
+        # Growth stage tracking
+        growth_frame = ctk.CTkFrame(automation_frame, fg_color="transparent")
+        growth_frame.pack(fill="x", padx=15, pady=(5, 15))
+        
+        self.growth_tracking_var = ctk.BooleanVar(value=True)
+        growth_checkbox = ctk.CTkCheckBox(
+            growth_frame,
+            text="Automatic growth stage progression",
+            variable=self.growth_tracking_var
+        )
+        growth_checkbox.pack(anchor="w")
     
     def create_gui_settings_section(self):
         """Create GUI settings section"""

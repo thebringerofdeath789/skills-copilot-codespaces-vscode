@@ -45,7 +45,7 @@ def main():
         logger.info("Application settings initialized")
         
         # Create and run main window
-        app = MainWindow()
+        app = MainWindow(settings)
         logger.info("Main window created successfully")
         
         # Start the application

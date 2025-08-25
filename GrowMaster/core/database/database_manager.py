@@ -225,6 +225,28 @@ class DatabaseManager:
                 )
             """)
             
+            # Notes system - Standalone notes and observations
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS notes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    category TEXT DEFAULT 'general',  -- 'general', 'observation', 'reminder', 'research'
+                    garden_id INTEGER,
+                    plant_id INTEGER,
+                    task_id INTEGER,
+                    priority TEXT DEFAULT 'normal',  -- 'low', 'normal', 'high'
+                    tags TEXT,  -- JSON array of tags
+                    is_pinned BOOLEAN DEFAULT FALSE,
+                    is_archived BOOLEAN DEFAULT FALSE,
+                    created_date TEXT NOT NULL,
+                    modified_date TEXT NOT NULL,
+                    FOREIGN KEY (garden_id) REFERENCES gardens (id) ON DELETE SET NULL,
+                    FOREIGN KEY (plant_id) REFERENCES plants (id) ON DELETE SET NULL,
+                    FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE SET NULL
+                )
+            """)
+            
             # User preferences and settings
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_settings (
@@ -233,6 +255,49 @@ class DatabaseManager:
                     setting_value TEXT NOT NULL,
                     setting_type TEXT NOT NULL DEFAULT 'string',
                     last_updated TEXT NOT NULL
+                )
+            """)
+            
+            # Automation-specific tables
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS notification_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    garden_id INTEGER,
+                    notification_type TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    is_read BOOLEAN DEFAULT FALSE,
+                    priority TEXT DEFAULT 'normal',
+                    task_id INTEGER,
+                    FOREIGN KEY (garden_id) REFERENCES gardens (id),
+                    FOREIGN KEY (task_id) REFERENCES tasks (id)
+                )
+            """)
+            
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS automation_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    garden_id INTEGER,
+                    setting_category TEXT NOT NULL,
+                    setting_key TEXT NOT NULL,
+                    setting_value TEXT NOT NULL,
+                    is_enabled BOOLEAN DEFAULT TRUE,
+                    last_updated TEXT NOT NULL,
+                    FOREIGN KEY (garden_id) REFERENCES gardens (id),
+                    UNIQUE(garden_id, setting_category, setting_key)
+                )
+            """)
+            
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS task_generation_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    garden_id INTEGER,
+                    generation_type TEXT NOT NULL,
+                    tasks_generated INTEGER DEFAULT 0,
+                    generated_at TEXT NOT NULL,
+                    generator_version TEXT,
+                    parameters TEXT,
+                    FOREIGN KEY (garden_id) REFERENCES gardens (id)
                 )
             """)
             
@@ -256,7 +321,12 @@ class DatabaseManager:
             "CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items (category)",
             "CREATE INDEX IF NOT EXISTS idx_transactions_item_date ON inventory_transactions (item_id, transaction_date)",
             "CREATE INDEX IF NOT EXISTS idx_costs_garden_date ON cost_entries (garden_id, entry_date)",
-            "CREATE INDEX IF NOT EXISTS idx_photos_garden_date ON photos (garden_id, photo_date)"
+            "CREATE INDEX IF NOT EXISTS idx_photos_garden_date ON photos (garden_id, photo_date)",
+            # Automation table indexes
+            "CREATE INDEX IF NOT EXISTS idx_notifications_garden_date ON notification_history (garden_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_notifications_read_status ON notification_history (is_read, priority)",
+            "CREATE INDEX IF NOT EXISTS idx_automation_settings_garden ON automation_settings (garden_id, setting_category)",
+            "CREATE INDEX IF NOT EXISTS idx_task_generation_garden_date ON task_generation_log (garden_id, generated_at)"
         ]
         
         for index_sql in indexes:
@@ -271,7 +341,15 @@ class DatabaseManager:
             ("notification_enabled", "true", "boolean"),
             ("auto_save_interval", "300", "integer"),  # 5 minutes
             ("default_garden_type", "indoor", "string"),
-            ("currency", "USD", "string")
+            ("currency", "USD", "string"),
+            # Automation settings
+            ("automation_enabled", "true", "boolean"),
+            ("intelligent_task_generation", "true", "boolean"),
+            ("multi_garden_coordination", "true", "boolean"),
+            ("notification_system", "true", "boolean"),
+            ("task_generation_frequency", "daily", "string"),
+            ("notification_priority_threshold", "normal", "string"),
+            ("coordination_check_interval", "30", "integer")  # minutes
         ]
         
         for setting_name, setting_value, setting_type in default_settings:
@@ -657,6 +735,141 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error completing task {task_id}: {e}")
             return False
+
+    # Automation Support Methods
+    def add_notification(self, garden_id: Optional[int], notification_type: str, 
+                        message: str, priority: str = "normal", task_id: Optional[int] = None) -> int:
+        """Add a new notification to the history"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.execute("""
+                    INSERT INTO notification_history 
+                    (garden_id, notification_type, message, created_at, priority, task_id)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (garden_id, notification_type, message, datetime.now().isoformat(), priority, task_id))
+                notification_id = cursor.lastrowid
+                conn.commit()
+                logger.info(f"Added notification: {notification_type} for garden {garden_id}")
+                return notification_id
+        except Exception as e:
+            logger.error(f"Error adding notification: {e}")
+            return -1
+
+    def get_unread_notifications(self, garden_id: Optional[int] = None) -> List[Dict]:
+        """Get unread notifications, optionally filtered by garden"""
+        try:
+            with self.get_connection() as conn:
+                if garden_id:
+                    cursor = conn.execute("""
+                        SELECT * FROM notification_history 
+                        WHERE is_read = FALSE AND garden_id = ?
+                        ORDER BY created_at DESC
+                    """, (garden_id,))
+                else:
+                    cursor = conn.execute("""
+                        SELECT * FROM notification_history 
+                        WHERE is_read = FALSE
+                        ORDER BY created_at DESC
+                    """)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Error getting unread notifications: {e}")
+            return []
+
+    def mark_notification_read(self, notification_id: int) -> bool:
+        """Mark a notification as read"""
+        try:
+            with self.get_connection() as conn:
+                conn.execute("""
+                    UPDATE notification_history 
+                    SET is_read = TRUE 
+                    WHERE id = ?
+                """, (notification_id,))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error marking notification as read: {e}")
+            return False
+
+    def set_automation_setting(self, garden_id: Optional[int], category: str, 
+                              key: str, value: str, enabled: bool = True) -> bool:
+        """Set an automation setting for a specific garden or globally"""
+        try:
+            with self.get_connection() as conn:
+                conn.execute("""
+                    INSERT OR REPLACE INTO automation_settings 
+                    (garden_id, setting_category, setting_key, setting_value, is_enabled, last_updated)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (garden_id, category, key, value, enabled, datetime.now().isoformat()))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error setting automation setting: {e}")
+            return False
+
+    def get_automation_settings(self, garden_id: Optional[int] = None, category: Optional[str] = None) -> List[Dict]:
+        """Get automation settings, optionally filtered by garden and/or category"""
+        try:
+            with self.get_connection() as conn:
+                query = "SELECT * FROM automation_settings WHERE 1=1"
+                params = []
+                
+                if garden_id is not None:
+                    query += " AND garden_id = ?"
+                    params.append(garden_id)
+                    
+                if category:
+                    query += " AND setting_category = ?"
+                    params.append(category)
+                    
+                query += " ORDER BY setting_category, setting_key"
+                
+                cursor = conn.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Error getting automation settings: {e}")
+            return []
+
+    def log_task_generation(self, garden_id: int, generation_type: str, 
+                           tasks_generated: int, parameters: Optional[Dict] = None) -> bool:
+        """Log a task generation event"""
+        try:
+            with self.get_connection() as conn:
+                conn.execute("""
+                    INSERT INTO task_generation_log 
+                    (garden_id, generation_type, tasks_generated, generated_at, 
+                     generator_version, parameters)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (garden_id, generation_type, tasks_generated, datetime.now().isoformat(),
+                     "1.0", json.dumps(parameters) if parameters else None))
+                conn.commit()
+                logger.info(f"Logged task generation: {generation_type} for garden {garden_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error logging task generation: {e}")
+            return False
+
+    def get_task_generation_history(self, garden_id: Optional[int] = None, limit: int = 50) -> List[Dict]:
+        """Get task generation history"""
+        try:
+            with self.get_connection() as conn:
+                if garden_id:
+                    cursor = conn.execute("""
+                        SELECT * FROM task_generation_log 
+                        WHERE garden_id = ?
+                        ORDER BY generated_at DESC 
+                        LIMIT ?
+                    """, (garden_id, limit))
+                else:
+                    cursor = conn.execute("""
+                        SELECT * FROM task_generation_log 
+                        ORDER BY generated_at DESC 
+                        LIMIT ?
+                    """, (limit,))
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Error getting task generation history: {e}")
+            return []
 
 # Global database manager instance  
 db_manager = DatabaseManager()

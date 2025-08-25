@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 class DashboardTab:
     """Main dashboard with grow overview and quick actions"""
     
-    def __init__(self, parent, settings):
+    def __init__(self, parent, settings, main_window=None):
         self.parent = parent
         self.settings = settings
+        self.main_window = main_window
         self.db_manager = DatabaseManager()
         
         # Configure parent frame
@@ -400,24 +401,81 @@ class DashboardTab:
     def view_garden(self, garden: Dict):
         """View garden details"""
         logger.info(f"Viewing garden: {garden['name']}")
-        # TODO: Switch to garden tab or open garden details
+        
+        if self.main_window:
+            try:
+                # Switch to Gardens tab
+                self.main_window.switch_to_tab("gardens")
+                
+                # If the gardens tab has a select_garden method, use it
+                if "gardens" in self.main_window.tabs:
+                    gardens_tab = self.main_window.tabs["gardens"]
+                    if hasattr(gardens_tab, 'select_garden'):
+                        gardens_tab.select_garden(garden)
+                        
+            except Exception as e:
+                logger.error(f"Error switching to garden view: {e}")
     
     def new_garden(self):
         """Open new garden wizard"""
         logger.info("Opening new garden wizard")
-        # TODO: Open new garden wizard
+        
+        if self.main_window:
+            try:
+                # Switch to Gardens tab
+                self.main_window.switch_to_tab("gardens")
+                
+                # If the gardens tab has a show_add_garden_form method, use it
+                if "gardens" in self.main_window.tabs:
+                    gardens_tab = self.main_window.tabs["gardens"]
+                    if hasattr(gardens_tab, 'show_add_garden_form'):
+                        gardens_tab.show_add_garden_form()
+                        
+            except Exception as e:
+                logger.error(f"Error opening new garden wizard: {e}")
     
     def add_task(self):
         """Open add task dialog"""
         logger.info("Opening add task dialog")
-        # TODO: Open add task dialog
+        
+        if self.main_window:
+            try:
+                # Use the main window's quick task dialog
+                self.main_window.quick_add_task()
+                
+            except Exception as e:
+                logger.error(f"Error opening add task dialog: {e}")
     
     def log_expense(self):
         """Open expense logging dialog"""
         logger.info("Opening expense logging dialog")
-        # TODO: Open expense dialog
+        
+        try:
+            from gui.dialogs.inventory_transaction_dialog import InventoryTransactionDialog
+            
+            dialog = InventoryTransactionDialog(
+                parent=self.master,
+                db_manager=self.db_manager
+            )
+            # Pre-select purchase transaction type for expense logging
+            dialog.transaction_type_var.set("purchase")
+            dialog.on_transaction_type_change("purchase")
+            
+            dialog.wait_window()
+            self.refresh_data()
+        except Exception as e:
+            logger.error(f"Error opening expense dialog: {e}")
+            from tkinter import messagebox
+            messagebox.showerror("Error", f"Failed to open expense dialog: {e}")
     
     def view_reports(self):
         """Switch to reports view"""
         logger.info("Viewing reports")
-        # TODO: Switch to analytics tab
+        
+        if self.main_window:
+            try:
+                # Switch to Calculator tab for financial reports
+                self.main_window.switch_to_tab("calculator")
+                
+            except Exception as e:
+                logger.error(f"Error switching to reports: {e}")

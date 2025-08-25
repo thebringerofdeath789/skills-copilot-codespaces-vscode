@@ -20,6 +20,7 @@ class MasterCalendarTab:
         self.parent = parent
         self.settings = settings
         self.current_date = date.today()
+        self.view_mode = "Month"  # Default view mode
         self.db_manager = DatabaseManager()
         self.tasks_data = []
         
@@ -72,7 +73,7 @@ class MasterCalendarTab:
             view_frame,
             text="Month",
             width=60,
-            command=lambda: self.set_view_mode("month"),
+            command=lambda: self.set_view_mode("Month"),
             **themes.get_button_styles()["primary"]
         )
         month_btn.pack(side="left", padx=2)
@@ -81,10 +82,19 @@ class MasterCalendarTab:
             view_frame,
             text="Week", 
             width=60,
-            command=lambda: self.set_view_mode("week"),
+            command=lambda: self.set_view_mode("Week"),
             **themes.get_button_styles()["secondary"]
         )
         week_btn.pack(side="left", padx=2)
+        
+        day_btn = ctk.CTkButton(
+            view_frame,
+            text="Day", 
+            width=60,
+            command=lambda: self.set_view_mode("Day"),
+            **themes.get_button_styles()["secondary"]
+        )
+        day_btn.pack(side="left", padx=2)
         
         # Calendar display area
         self.calendar_frame = ctk.CTkScrollableFrame(
@@ -93,8 +103,9 @@ class MasterCalendarTab:
         )
         self.calendar_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
         
-        # Create calendar grid
-        self.create_calendar_grid()
+        # Initialize with default view mode
+        self.set_view_mode(self.view_mode)
+        self.load_calendar_data()
     
     def create_calendar_grid(self):
         """Create monthly calendar grid"""
@@ -284,4 +295,301 @@ class MasterCalendarTab:
     def set_view_mode(self, mode: str):
         """Set calendar view mode"""
         logger.info(f"Setting calendar view mode: {mode}")
-        # TODO: Implement different view modes
+        
+        self.view_mode = mode
+        
+        # Clear existing calendar
+        for widget in self.calendar_frame.winfo_children():
+            widget.destroy()
+        
+        if mode == "Month":
+            self.create_month_view()
+        elif mode == "Week":
+            self.create_week_view()
+        elif mode == "Day":
+            self.create_day_view()
+        else:
+            self.create_month_view()  # Default to month view
+    
+    def create_month_view(self):
+        """Create monthly calendar view"""
+        # Month navigation and title
+        nav_frame = ctk.CTkFrame(self.calendar_frame, fg_color="transparent")
+        nav_frame.pack(fill="x", pady=(0, 10))
+        
+        prev_btn = ctk.CTkButton(
+            nav_frame,
+            text="◀",
+            width=30,
+            command=self.prev_month,
+            **themes.get_button_styles()["secondary"]
+        )
+        prev_btn.pack(side="left")
+        
+        self.month_label = ctk.CTkLabel(
+            nav_frame,
+            text=self.current_date.strftime("%B %Y"),
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        self.month_label.pack(side="left", expand=True)
+        
+        next_btn = ctk.CTkButton(
+            nav_frame,
+            text="▶",
+            width=30,
+            command=self.next_month,
+            **themes.get_button_styles()["secondary"]
+        )
+        next_btn.pack(side="right")
+        
+        # Create calendar grid
+        self.create_calendar_grid()
+        self.load_calendar_data()
+    
+    def create_week_view(self):
+        """Create weekly calendar view"""
+        # Week navigation and title
+        nav_frame = ctk.CTkFrame(self.calendar_frame, fg_color="transparent")
+        nav_frame.pack(fill="x", pady=(0, 10))
+        
+        prev_btn = ctk.CTkButton(
+            nav_frame,
+            text="◀",
+            width=30,
+            command=self.prev_week,
+            **themes.get_button_styles()["secondary"]
+        )
+        prev_btn.pack(side="left")
+        
+        # Calculate week range
+        start_of_week = self.current_date - timedelta(days=self.current_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        
+        week_label = ctk.CTkLabel(
+            nav_frame,
+            text=f"Week of {start_of_week.strftime('%B %d')} - {end_of_week.strftime('%B %d, %Y')}",
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        week_label.pack(side="left", expand=True)
+        
+        next_btn = ctk.CTkButton(
+            nav_frame,
+            text="▶",
+            width=30,
+            command=self.next_week,
+            **themes.get_button_styles()["secondary"]
+        )
+        next_btn.pack(side="right")
+        
+        # Create week grid
+        self.create_week_grid()
+        self.load_calendar_data()
+    
+    def create_day_view(self):
+        """Create daily calendar view"""
+        # Day navigation and title
+        nav_frame = ctk.CTkFrame(self.calendar_frame, fg_color="transparent")
+        nav_frame.pack(fill="x", pady=(0, 10))
+        
+        prev_btn = ctk.CTkButton(
+            nav_frame,
+            text="◀",
+            width=30,
+            command=self.prev_day,
+            **themes.get_button_styles()["secondary"]
+        )
+        prev_btn.pack(side="left")
+        
+        day_label = ctk.CTkLabel(
+            nav_frame,
+            text=self.current_date.strftime("%A, %B %d, %Y"),
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        day_label.pack(side="left", expand=True)
+        
+        next_btn = ctk.CTkButton(
+            nav_frame,
+            text="▶",
+            width=30,
+            command=self.next_day,
+            **themes.get_button_styles()["secondary"]
+        )
+        next_btn.pack(side="right")
+        
+        # Create day schedule
+        self.create_day_schedule()
+    
+    def create_week_grid(self):
+        """Create weekly view grid"""
+        # Days of week headers
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        start_of_week = self.current_date - timedelta(days=self.current_date.weekday())
+        
+        grid_frame = ctk.CTkFrame(self.calendar_frame, **themes.get_frame_styles()["default"])
+        grid_frame.pack(fill="both", expand=True)
+        
+        # Configure grid columns
+        for i in range(7):
+            grid_frame.grid_columnconfigure(i, weight=1, uniform="day")
+        
+        # Day headers
+        for i, day in enumerate(days):
+            current_day = start_of_week + timedelta(days=i)
+            header_frame = ctk.CTkFrame(grid_frame, **themes.get_frame_styles()["card"])
+            header_frame.grid(row=0, column=i, sticky="ew", padx=1, pady=1)
+            
+            day_label = ctk.CTkLabel(
+                header_frame,
+                text=f"{day}\\n{current_day.strftime('%m/%d')}",
+                font=ctk.CTkFont(size=12, weight="bold")
+            )
+            day_label.pack(pady=5)
+        
+        # Create day columns
+        for i in range(7):
+            current_day = start_of_week + timedelta(days=i)
+            day_frame = ctk.CTkScrollableFrame(grid_frame)
+            day_frame.grid(row=1, column=i, sticky="nsew", padx=1, pady=1)
+            
+            # Load tasks for this day
+            day_tasks = self.get_tasks_for_date(current_day)
+            for task in day_tasks:
+                self.create_task_widget(day_frame, task, compact=True)
+        
+        grid_frame.grid_rowconfigure(1, weight=1)
+    
+    def create_day_schedule(self):
+        """Create daily schedule view"""
+        day_frame = ctk.CTkScrollableFrame(self.calendar_frame)
+        day_frame.pack(fill="both", expand=True)
+        
+        # Time slots (simplified - 6 AM to 10 PM)
+        tasks = self.get_tasks_for_date(self.current_date)
+        
+        # Group tasks by time or show all for the day
+        ctk.CTkLabel(
+            day_frame,
+            text=f"Tasks for {self.current_date.strftime('%A, %B %d')}:",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(anchor="w", pady=10, padx=10)
+        
+        if not tasks:
+            ctk.CTkLabel(
+                day_frame,
+                text="No tasks scheduled for this day",
+                font=ctk.CTkFont(size=14),
+                text_color=themes.get_color("text_secondary")
+            ).pack(anchor="w", pady=20, padx=10)
+        else:
+            for task in tasks:
+                self.create_task_widget(day_frame, task, detailed=True)
+    
+    def get_tasks_for_date(self, target_date):
+        """Get tasks for a specific date"""
+        target_str = target_date.strftime("%Y-%m-%d")
+        return [task for task in self.tasks_data if task.get("due_date", "").startswith(target_str)]
+    
+    def prev_week(self):
+        """Navigate to previous week"""
+        self.current_date -= timedelta(weeks=1)
+        self.create_week_view()
+    
+    def next_week(self):
+        """Navigate to next week"""
+        self.current_date += timedelta(weeks=1)
+        self.create_week_view()
+    
+    def prev_day(self):
+        """Navigate to previous day"""
+        self.current_date -= timedelta(days=1)
+        self.create_day_view()
+    
+    def next_day(self):
+        """Navigate to next day"""
+        self.current_date += timedelta(days=1)
+        self.create_day_view()
+    
+    def create_task_widget(self, parent, task, compact=False, detailed=False):
+        """Create a task widget for calendar display"""
+        try:
+            if compact:
+                # Compact widget for week view
+                task_frame = ctk.CTkFrame(parent, **themes.get_frame_styles()["card"])
+                task_frame.pack(fill="x", pady=1, padx=2)
+                
+                task_label = ctk.CTkLabel(
+                    task_frame,
+                    text=task.get('title', 'Untitled Task'),
+                    font=ctk.CTkFont(size=10),
+                    anchor="w"
+                )
+                task_label.pack(anchor="w", padx=5, pady=2)
+                
+            elif detailed:
+                # Detailed widget for day view
+                task_frame = ctk.CTkFrame(parent, **themes.get_frame_styles()["card"])
+                task_frame.pack(fill="x", pady=5, padx=10)
+                
+                title_label = ctk.CTkLabel(
+                    task_frame,
+                    text=task.get('title', 'Untitled Task'),
+                    font=ctk.CTkFont(size=14, weight="bold"),
+                    anchor="w"
+                )
+                title_label.pack(anchor="w", padx=10, pady=(10, 5))
+                
+                # Task details
+                if task.get('description'):
+                    desc_label = ctk.CTkLabel(
+                        task_frame,
+                        text=task['description'][:100] + "..." if len(task.get('description', '')) > 100 else task.get('description', ''),
+                        font=ctk.CTkFont(size=12),
+                        anchor="w",
+                        text_color=themes.get_color("text_secondary")
+                    )
+                    desc_label.pack(anchor="w", padx=10, pady=(0, 5))
+                
+                # Priority and status
+                info_frame = ctk.CTkFrame(task_frame, fg_color="transparent")
+                info_frame.pack(fill="x", padx=10, pady=(0, 10))
+                
+                priority_colors = {
+                    "high": themes.get_color("error"),
+                    "medium": themes.get_color("warning"), 
+                    "low": themes.get_color("info")
+                }
+                
+                priority_label = ctk.CTkLabel(
+                    info_frame,
+                    text=f"Priority: {task.get('priority', 'medium').title()}",
+                    font=ctk.CTkFont(size=10),
+                    text_color=priority_colors.get(task.get('priority', 'medium'), themes.get_color("text_secondary"))
+                )
+                priority_label.pack(side="left")
+                
+                status_label = ctk.CTkLabel(
+                    info_frame,
+                    text=f"Status: {task.get('status', 'pending').title()}",
+                    font=ctk.CTkFont(size=10),
+                    text_color=themes.get_color("success") if task.get('completed') else themes.get_color("text_secondary")
+                )
+                status_label.pack(side="right")
+                
+            else:
+                # Default widget for month view
+                task_frame = ctk.CTkFrame(parent, **themes.get_frame_styles()["card"])
+                task_frame.pack(fill="x", pady=1)
+                
+                task_label = ctk.CTkLabel(
+                    task_frame,
+                    text=task.get('title', 'Untitled Task')[:20] + "..." if len(task.get('title', '')) > 20 else task.get('title', 'Untitled Task'),
+                    font=ctk.CTkFont(size=9),
+                    anchor="w"
+                )
+                task_label.pack(anchor="w", padx=3, pady=1)
+            
+        except Exception as e:
+            logger.error(f"Error creating task widget: {e}")
+            # Fallback simple widget
+            task_label = ctk.CTkLabel(parent, text=task.get('title', 'Task'), font=ctk.CTkFont(size=10))
+            task_label.pack(pady=1)

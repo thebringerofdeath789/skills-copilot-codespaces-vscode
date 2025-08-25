@@ -4,3 +4,19 @@
 2025-08-24 20:24:00,834 - __main__ - ERROR - Import error: No module named 'customtkinter'
 2025-08-24 20:25:42,755 - __main__ - INFO - Starting GrowMaster Pro...
 2025-08-24 20:25:42,761 - __main__ - ERROR - Import error: No module named 'customtkinter'
+2025-08-24 23:49:35,531 - __main__ - INFO - Starting GrowMaster Pro...
+2025-08-24 23:49:35,691 - core.database.database_manager - INFO - Initializing database at: /home/codespace/Documents/GrowMaster Pro/growmaster.db
+2025-08-24 23:49:35,697 - core.database.database_manager - INFO - Database initialization completed successfully
+2025-08-24 23:49:36,110 - config.settings - INFO - Directory created/verified: /home/codespace/GrowMaster
+2025-08-24 23:49:36,110 - config.settings - INFO - Directory created/verified: /home/codespace/GrowMaster/data
+2025-08-24 23:49:36,111 - config.settings - INFO - Directory created/verified: /home/codespace/GrowMaster/backups
+2025-08-24 23:49:36,111 - __main__ - INFO - Application settings initialized
+2025-08-24 23:49:36,111 - __main__ - ERROR - Unexpected error: MainWindow.__init__() missing 1 required positional argument: 'settings'
+2025-08-24 23:50:03,238 - __main__ - INFO - Starting GrowMaster Pro...
+2025-08-24 23:50:03,395 - core.database.database_manager - INFO - Initializing database at: /home/codespace/Documents/GrowMaster Pro/growmaster.db
+2025-08-24 23:50:03,402 - core.database.database_manager - INFO - Database initialization completed successfully
+2025-08-24 23:50:03,792 - config.settings - INFO - Directory created/verified: /home/codespace/GrowMaster
+2025-08-24 23:50:03,793 - config.settings - INFO - Directory created/verified: /home/codespace/GrowMaster/data
+2025-08-24 23:50:03,793 - config.settings - INFO - Directory created/verified: /home/codespace/GrowMaster/backups
+2025-08-24 23:50:03,793 - __main__ - INFO - Application settings initialized
+2025-08-24 23:50:03,849 - __main__ - ERROR - Unexpected error: no display name and no $DISPLAY environment variable

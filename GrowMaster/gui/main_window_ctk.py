@@ -210,15 +210,26 @@ class MainWindow:
     def update_status(self):
         """Update status bar information"""
         try:
-            # This would typically query the database for real numbers
-            active_gardens = 0  # TODO: Get from database
-            pending_tasks = 0   # TODO: Get from database
-            
+            # Get actual garden count from database
+            with self.db_manager.get_connection() as conn:
+                garden_cursor = conn.execute("SELECT COUNT(*) FROM gardens WHERE is_active = 1")
+                active_gardens = garden_cursor.fetchone()[0]
+                
+                # Get pending tasks count
+                task_cursor = conn.execute("""
+                    SELECT COUNT(*) FROM tasks 
+                    WHERE is_completed = 0 AND due_date >= date('now')
+                """)
+                pending_tasks = task_cursor.fetchone()[0]
+                
             self.status_right.configure(
                 text=f"Active Gardens: {active_gardens} | Pending Tasks: {pending_tasks}"
             )
         except Exception as e:
             logger.error(f"Error updating status: {e}")
+            self.status_right.configure(
+                text="Active Gardens: 0 | Pending Tasks: 0"
+            )
         
         # Schedule next update
         self.root.after(30000, self.update_status)  # Update every 30 seconds
@@ -250,8 +261,31 @@ class MainWindow:
     
     def quick_add_task(self):
         """Show quick task creation dialog"""
-        # TODO: Implement quick task dialog
-        messagebox.showinfo("Coming Soon", "Quick task creation is being developed!")
+        try:
+            from gui.dialogs.quick_task_dialog import QuickTaskDialog
+            
+            dialog = QuickTaskDialog(
+                parent=self.root,
+                db_manager=self.db_manager,
+                callback=self.refresh_dashboard
+            )
+            dialog.wait_window()
+        except Exception as e:
+            logger.error(f"Error opening quick task dialog: {e}")
+            messagebox.showerror("Error", f"Failed to open task dialog: {e}")
+    
+    def refresh_dashboard(self):
+        """Refresh dashboard data after changes"""
+        try:
+            # Update status
+            self.update_status()
+            
+            # If dashboard tab is available, refresh it
+            if hasattr(self, 'dashboard_tab') and self.dashboard_tab:
+                self.dashboard_tab.refresh_data()
+                
+        except Exception as e:
+            logger.error(f"Error refreshing dashboard: {e}")
     
     def on_closing(self):
         """Handle application closing"""

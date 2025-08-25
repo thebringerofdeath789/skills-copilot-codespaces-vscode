@@ -1,5 +1,6 @@
 """
 Dashboard Tab - Central command center for GrowMaster Pro
+DEPRECATED: This file is legacy code. Use dashboard_tab.py instead.
 Real-time overview of all active grows with status tracking
 """
 

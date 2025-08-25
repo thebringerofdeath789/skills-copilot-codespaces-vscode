@@ -1,14 +1,16 @@
 """
 Scheduler modules for GrowMaster Pro
-Automated task scheduling and calendar management
+Automated task scheduling, multi-garden coordination, and notification management
 """
 
 from .task_scheduler import TaskScheduler
-# from .calendar_scheduler import CalendarScheduler  # TODO: Implement
-# from .recurring_scheduler import RecurringScheduler  # TODO: Implement
+from .intelligent_task_generator import IntelligentTaskGenerator
+from .multi_garden_coordinator import MultiGardenTaskCoordinator
+from .notification_system import BasicNotificationSystem
 
 __all__ = [
     'TaskScheduler',
-    # 'CalendarScheduler',
-    # 'RecurringScheduler'
+    'IntelligentTaskGenerator', 
+    'MultiGardenTaskCoordinator',
+    'BasicNotificationSystem'
 ]
